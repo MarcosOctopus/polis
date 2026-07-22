@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # POSTGRESQL + POSTGIS
+  # ==========================================
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: polis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: polis
+      POSTGRES_USER: polis
+      POSTGRES_PASSWORD: polis_dev_2026
+    ports:
+      - "5433:5432"
+    volumes:
+      - polis_postgres:/var/lib/postgresql/data
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polis -d polis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # REDIS
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: polis-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - polis_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================
+  # TRAEFIK (PROXY)
+  # ==========================================
+  traefik:
+    image: traefik:v3.0
+    container_name: polis-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.dns-cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.dns-cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.dns-cloudflare.acme.email=marcospaulo@timedofuturo.com"
+      - "--certificatesresolvers.dns-cloudflare.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - polis_letsencrypt:/letsencrypt
+    networks:
+      - polis-network
+
+  # ==========================================
+  # BACKEND (FastAPI)
+  # ==========================================
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.backend
+    container_name: polis-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://polis:polis_dev_2026@postgres:5432/polis
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: polis_secret_key_change_in_production_2026
+      ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.polis-api.rule=Host(`polis.miraitohope.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.polis-api.entrypoints=websecure"
+      - "traefik.http.routers.polis-api.tls=true"
+      - "traefik.http.routers.polis-api.tls.certresolver=dns-cloudflare"
+      - "traefik.http.routers.polis-api.middlewares=api-strip-prefix"
+      - "traefik.http.middlewares.api-strip-prefix.stripprefix.prefixes=/api"
+      - "traefik.http.services.polis-api.loadbalancer.server.port=8000"
+    networks:
+      - polis-network
+
+  # ==========================================
+  # FRONTEND (Next.js)
+  # ==========================================
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
+    container_name: polis-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: https://polis.miraitohope.com/api
+      NEXT_PUBLIC_WS_URL: wss://polis.miraitohope.com/api/ws
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.polis-frontend.rule=Host(`polis.miraitohope.com`)"
+      - "traefik.http.routers.polis-frontend.entrypoints=websecure"
+      - "traefik.http.routers.polis-frontend.tls=true"
+      - "traefik.http.routers.polis-frontend.tls.certresolver=dns-cloudflare"
+      - "traefik.http.services.polis-frontend.loadbalancer.server.port=3000"
+    networks:
+      - polis-network
+
+volumes:
+  polis_postgres:
+  polis_redis:
+  polis_letsencrypt:
+
+networks:
+  polis-network:
+    driver: bridge

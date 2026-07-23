@@ -11,6 +11,7 @@ import {
 import { authApi, AuthResponse } from '@/lib/api';
 
 interface User {
+  credits?: number;
   id: number;
   name: string;
   email: string;
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken) {
       setToken(storedToken);
       // Mock user para fallback — dashboard funciona offline
-      setUser({ id: 1, name: 'Admin', email: 'admin@polis.ai' });
+      setUser({ id: 1, name: 'Admin', email: 'admin@polis.ai', credits: 2450 });
       setLoading(false);
       // Tenta validar no backend, mas não bloqueia
       authApi.me().catch(() => {
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: 1,
         name: email.split('@')[0],
         email: email,
+        credits: 2450,
       });
     }
   }, []);
@@ -84,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const mockToken = 'mock_jwt_token_' + Date.now();
         localStorage.setItem('polis_token', mockToken);
         setToken(mockToken);
-        setUser({ id: 1, name, email });
+        setUser({ id: 1, name, email, credits: 2450 });
       }
     },
     []

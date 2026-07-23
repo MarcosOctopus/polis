@@ -85,3 +85,53 @@ export const dashboardApi = {
 };
 
 export default api;
+
+/* ───── WhatsApp API ───── */
+
+export interface WhatsAppSendTextPayload {
+  to: string;
+  text: string;
+  preview_url?: boolean;
+}
+
+export interface WhatsAppSendMediaPayload {
+  to: string;
+  media_url: string;
+  caption?: string;
+  media_type?: string;
+}
+
+export interface WhatsAppSendTemplatePayload {
+  to: string;
+  template_name: string;
+  params?: Record<string, string>;
+  language?: string;
+}
+
+export interface WhatsAppMessageResponse {
+  success: boolean;
+  message_id?: string;
+  error?: string;
+}
+
+export const whatsappApi = {
+  /** Send text message */
+  sendText: (payload: WhatsAppSendTextPayload) =>
+    api.post<WhatsAppMessageResponse>('/whatsapp/send/text', payload),
+
+  /** Send media (image/video/document) */
+  sendMedia: (payload: WhatsAppSendMediaPayload) =>
+    api.post<WhatsAppMessageResponse>('/whatsapp/send/media', payload),
+
+  /** Send template message */
+  sendTemplate: (payload: WhatsAppSendTemplatePayload) =>
+    api.post<WhatsAppMessageResponse>('/whatsapp/send/template', payload),
+
+  /** Check service status */
+  getStatus: () =>
+    api.get<{ configured: boolean; online: boolean }>('/whatsapp/status'),
+
+  /** Check message delivery status */
+  getMessageStatus: (messageId: string) =>
+    api.get(`/whatsapp/messages/${messageId}/status`),
+};

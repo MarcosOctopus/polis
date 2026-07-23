@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["*"]
 
+    # OpenAI
+    openai_api_key: str = ""
+
+    # WhatsApp Cloud API
+    whatsapp_phone_number_id: str = ""
+    whatsapp_api_key: str = ""
+    whatsapp_verify_token: str = "polis-verify-whatsapp"
+    whatsapp_webhook_url: str = ""
+
     model_config = {"env_prefix": "POLIS_", "env_file": ".env"}
 
     def model_post_init(self, __context):

@@ -295,7 +295,97 @@ export default function Settings() {
           </div>
         </SectionCard>
 
-        {/* ── 4) Preferências ── */}
+        {/* ── 4) WhatsApp ── */}
+        <SectionCard title="WhatsApp" icon={() => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>}>
+          <div className="space-y-5">
+            {/* Status */}
+            <div>
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Status da Conexão
+              </label>
+              <div className="flex items-center gap-3 py-3 px-4 rounded-lg bg-gray-800/30 border border-gray-800">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-white">WhatsApp Cloud API</p>
+                  <p className="text-xs text-gray-500">Conectado e operacional</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Config */}
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">
+                  Phone Number ID
+                </label>
+                <input
+                  type="text"
+                  defaultValue="542510762287376"
+                  readOnly
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-300 focus:outline-none cursor-default"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">
+                  Token de Acesso
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    defaultValue="************EAAH"
+                    readOnly
+                    className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-300 focus:outline-none cursor-default"
+                  />
+                  <button className="p-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400 hover:text-white transition-all" title="Copiar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Webhook */}
+            <div className="border-t border-gray-800 pt-4">
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Webhook URL
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  defaultValue="https://polis.miraitohope.com/api/whatsapp/webhook"
+                  readOnly
+                  className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-300 focus:outline-none cursor-default"
+                />
+                <button className="p-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-400 hover:text-white transition-all" title="Copiar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1.5">
+                Configure esta URL no Meta Developer Dashboard em <strong>Webhook → Callback URL</strong>. Use o verify token: <code className="text-cyan-400">polis_wa_verify_2026</code>
+              </p>
+            </div>
+
+            {/* Números autorizados */}
+            <div className="border-t border-gray-800 pt-4">
+              <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                Números Autorizados (Sandbox)
+              </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-800/20 border border-gray-800">
+                  <span className="text-sm text-gray-300 font-mono">5511999999999</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Pendente</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Para testar, adicione seu número no <strong>Meta Business Settings → WhatsApp Accounts → Sandbox → Allowed Numbers</strong>
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ── 5) Preferências ── */}
         <SectionCard title="Preferências" icon={Palette}>
           <div className="space-y-5">
             {/* Tema */}

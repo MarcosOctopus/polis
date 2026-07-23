@@ -17,7 +17,9 @@ import {
   Shield,
   Send,
   MapPin,
+  Zap,
   Trophy,
+  CreditCard,
 } from 'lucide-react';
 
 const navItems = [
@@ -29,6 +31,7 @@ const navItems = [
   { label: 'Ranking', href: '/ranking', icon: Trophy },
   { label: 'Monitoramento', href: '/monitoring', icon: Activity },
   { label: 'Relatórios', href: '/reports', icon: BarChart3 },
+  { label: 'Planos', href: '/plans', icon: CreditCard },
   { label: 'Segurança', href: '/security', icon: Shield },
   { label: 'Configurações', href: '/settings', icon: Settings },
 ];
@@ -99,6 +102,14 @@ export default function Sidebar() {
               {user.name}
             </p>
             <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+        )}
+        {user && !collapsed && (
+          <div className="px-3 py-1.5 mb-3 rounded-lg bg-gray-800/40 border border-gray-800 flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-yellow-400" />
+            <span className="text-xs font-medium text-yellow-400">
+              {(user.credits ?? 0).toLocaleString("pt-BR")} créditos
+            </span>
           </div>
         )}
         <button

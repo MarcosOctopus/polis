@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {
   MapPin, AlertTriangle, Building2, Activity, X,
@@ -234,13 +234,20 @@ function genSocialPosts(): SocialPost[] {
 
 // ── Main Component ──
 export default function MapaPage() {
-  const [all] = useState(genEntries);
+  const [mounted, setMounted] = useState(false);
+  const [all, setAll] = useState<Entry[]>([]);
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
+  useEffect(() => {
+    setAll(genEntries());
+    setSocialPosts(genSocialPosts());
+    setMounted(true);
+  }, []);
+
   const [modo, setModo] = useState<Modo>('reclamacoes');
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [filterBairro, setFilterBairro] = useState<string | null>(null);
   const [socialTab, setSocialTab] = useState<'feed' | 'redes'>('feed');
-  const [socialPosts] = useState(genSocialPosts);
 
   const filteredByModo = useMemo(() => {
     if (modo === 'todos') return all;
@@ -262,14 +269,14 @@ export default function MapaPage() {
   const hovData = hovered ? allEntries.find((n) => n.neighborhood.id === hovered) ?? null : null;
 
   const filtered = filterBairro ? filteredByModo.filter((e) => e.bairro === filterBairro) : filteredByModo;
-  const ativas = filteredByModo.filter((e) => e.status === 'aberto' || e.status === 'em_andamento').length;
+  const ativas = mounted ? filteredByModo.filter((e) => e.status === 'aberto' || e.status === 'em_andamento').length : '—';
 
   let maxCount = 0, maxLabel = '—';
   for (const nd of ndMap) { if (nd.count > maxCount) { maxCount = nd.count; maxLabel = nd.neighborhood.nome; } }
 
-  const totalEntries = filteredByModo.length;
-  const totalRec = all.filter((e) => e.modo === 'reclamacoes').length;
-  const totalElo = all.filter((e) => e.modo === 'elogios').length;
+  const totalEntries = mounted ? filteredByModo.length : '—';
+  const totalRec = mounted ? all.filter((e) => e.modo === 'reclamacoes').length : '—';
+  const totalElo = mounted ? all.filter((e) => e.modo === 'elogios').length : '—';
 
   const handleClick = (id: string, nome: string) => {
     const next = selected === id ? null : id;
@@ -324,8 +331,11 @@ export default function MapaPage() {
     return '😐';
   }
 
-  const sentCounts = { positivo: 0, neutro: 0, negativo: 0 };
-  socialPosts.forEach((p) => sentCounts[p.sentimento]++);
+  const sentCounts = !mounted ? { positivo: '—', neutro: '—', negativo: '—' } : (() => {
+    const c = { positivo: 0, neutro: 0, negativo: 0 };
+    socialPosts.forEach((p) => c[p.sentimento]++);
+    return c;
+  })();
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -531,50 +541,52 @@ export default function MapaPage() {
             </div>
           )}
 
-          {/* Social Media Feed */}
-          <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-purple-400" /> Redes Sociais
-              </h3>
-              <span className="text-[10px] text-gray-600">Últimas 24h</span>
-            </div>
+          {/* Social Media Feed — só renderiza após mount pra evitar hydration mismatch */}
+          {mounted && (
+            <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-purple-400" /> Redes Sociais
+                </h3>
+                <span className="text-[10px] text-gray-600">Últimas 24h</span>
+              </div>
 
-            {/* Sentiment Summary */}
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-green-400/5 rounded-lg p-2 text-center">
-                <span className="text-lg">{sentCounts.positivo}</span>
-                <p className="text-[10px] text-gray-500">😊 Positivo</p>
-              </div>
-              <div className="bg-yellow-400/5 rounded-lg p-2 text-center">
-                <span className="text-lg">{sentCounts.neutro}</span>
-                <p className="text-[10px] text-gray-500">😐 Neutro</p>
-              </div>
-              <div className="bg-red-400/5 rounded-lg p-2 text-center">
-                <span className="text-lg">{sentCounts.negativo}</span>
-                <p className="text-[10px] text-gray-500">😡 Negativo</p>
-              </div>
-            </div>
-
-            {/* Posts */}
-            <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-              {socialPosts.slice(0, 6).map((post) => (
-                <div key={post.id} className="bg-[#0a0a0f] rounded-lg p-3 border border-gray-800/30">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-gray-600">{post.rede}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${getSocialBadge(post.sentimento)}`}>
-                      {getSocialIcon(post.sentimento)} {post.sentimento}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">{post.texto}</p>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-[10px] text-gray-600">{post.bairro}</span>
-                    <span className="text-[10px] text-gray-700">{post.data}</span>
-                  </div>
+              {/* Sentiment Summary */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-green-400/5 rounded-lg p-2 text-center">
+                  <span className="text-lg">{sentCounts.positivo}</span>
+                  <p className="text-[10px] text-gray-500">😊 Positivo</p>
                 </div>
-              ))}
+                <div className="bg-yellow-400/5 rounded-lg p-2 text-center">
+                  <span className="text-lg">{sentCounts.neutro}</span>
+                  <p className="text-[10px] text-gray-500">😐 Neutro</p>
+                </div>
+                <div className="bg-red-400/5 rounded-lg p-2 text-center">
+                  <span className="text-lg">{sentCounts.negativo}</span>
+                  <p className="text-[10px] text-gray-500">😡 Negativo</p>
+                </div>
+              </div>
+
+              {/* Posts */}
+              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                {socialPosts.slice(0, 6).map((post) => (
+                  <div key={post.id} className="bg-[#0a0a0f] rounded-lg p-3 border border-gray-800/30">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-gray-600">{post.rede}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${getSocialBadge(post.sentimento)}`}>
+                        {getSocialIcon(post.sentimento)} {post.sentimento}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-300 leading-relaxed">{post.texto}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[10px] text-gray-600">{post.bairro}</span>
+                      <span className="text-[10px] text-gray-700">{post.data}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

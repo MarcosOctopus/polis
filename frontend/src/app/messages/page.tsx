@@ -25,6 +25,7 @@ import {
   Tag,
   User,
 } from 'lucide-react';
+import { sendWhatsAppReal } from '@/lib/whatsapp-send';
 
 /* ───── Types ───── */
 
@@ -390,17 +391,25 @@ export default function MessagesPage() {
 
   const formRef = useRef<HTMLDivElement>(null);
 
-  /* ───── Stats ───── */
-  const hojeTotal = useMemo(
-    () => complaints.filter((c) => {
-      const now = new Date();
-      return c.timestamp.toDateString() === now.toDateString();
-    }).length,
-    [complaints]
-  );
+  /* ───── Stats (client-only to avoid SSR hydration mismatch) ───── */
+  const hojeTotal = complaints.filter((c) => {
+    const now = new Date();
+    return c.timestamp.toDateString() === now.toDateString();
+  }).length;
 
-  const stats = useMemo(
-    () => [
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const stats = useMemo(() => {
+    if (!mounted) {
+      return [
+        { label: 'Total de reclamações (hoje)', value: '—', icon: MessageSquare, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
+        { label: 'WhatsApp enviados', value: '—', icon: MessageCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        { label: 'E-mails enviados', value: '—', icon: Mail, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        { label: 'SMS enviados', value: '—', icon: Smartphone, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+      ];
+    }
+    return [
       {
         label: 'Total de reclamações (hoje)',
         value: hojeTotal,
@@ -433,9 +442,8 @@ export default function MessagesPage() {
         bg: 'bg-blue-500/10',
         border: 'border-blue-500/20',
       },
-    ],
-    [hojeTotal, envioHistory]
-  );
+    ];
+  }, [hojeTotal, envioHistory, mounted]);
 
   /* ───── Filtered complaints ───── */
   const filteredComplaints = useMemo(() => {
@@ -502,8 +510,20 @@ export default function MessagesPage() {
     }, 1500 + Math.random() * 1500);
   }
 
-  function sendWhatsApp() {
-    simulateSend('whatsapp', whatsPhone, whatsMsg, setWhatsSending);
+  async function sendWhatsApp() {
+    if (!whatsPhone.trim() || !whatsMsg.trim()) return;
+    setWhatsSending(true);
+    const result = await sendWhatsAppReal(whatsPhone.trim(), whatsMsg.trim());
+    const newEnvio: Envio = {
+      id: `ENV-${String(envioHistory.length + 1).padStart(3, '0')}`,
+      tipo: 'whatsapp',
+      destino: whatsPhone.trim(),
+      mensagem: whatsMsg.trim(),
+      status: result.success ? 'enviado' : 'falhou',
+      timestamp: new Date(),
+    };
+    setEnvioHistory((prev) => [newEnvio, ...prev]);
+    setWhatsSending(false);
     setWhatsPhone('');
     setWhatsMsg('');
   }

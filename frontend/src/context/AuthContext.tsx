@@ -35,21 +35,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('polis_token');
-    if (storedToken) {
-      setToken(storedToken);
-      // Mock user para fallback — dashboard funciona offline
-      setUser({ id: 1, name: 'Admin', email: 'admin@polis.ai', credits: 2450 });
-      setLoading(false);
-      // Tenta validar no backend, mas não bloqueia
-      authApi.me().catch(() => {
-        localStorage.removeItem('polis_token');
-        setToken(null);
-        setUser(null);
-      });
-    } else {
+    // Timeout de segurança: garante que loading nunca fique true para sempre
+    const safetyTimer = setTimeout(() => setLoading(false), 5000);
+
+    try {
+      const storedToken = localStorage.getItem('polis_token');
+      if (storedToken) {
+        setToken(storedToken);
+        // Mock user para fallback — dashboard funciona offline
+        setUser({ id: 1, name: 'Admin', email: 'admin@polis.ai', credits: 2450 });
+        clearTimeout(safetyTimer);
+        setLoading(false);
+        // Tenta validar no backend, mas não bloqueia
+        authApi.me().catch(() => {
+          localStorage.removeItem('polis_token');
+          setToken(null);
+          setUser(null);
+        });
+      } else {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+      }
+    } catch {
+      clearTimeout(safetyTimer);
       setLoading(false);
     }
+
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
